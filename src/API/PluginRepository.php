@@ -1,27 +1,22 @@
 <?php
-/** Plugin update API and package links. */
+/** Migrated feature methods; behavior is retained during the structural refactor. */
 
+namespace Webd\Repository\API;
 
+defined( 'ABSPATH' ) || exit;
 
-if (!defined('ABSPATH')) {
-    exit('This isn\'t the page you\'re looking for. Move along, move along.');
-}
+final class PluginRepository {
+	public static function register_hooks() {
+		add_action('wp_ajax_nopriv_plugin_version', 'webd_plugin_version');
+		add_action('wp_ajax_nopriv_plugin_information', 'webd_plugin_information');
+		add_shortcode('packagelink', 'webd_package_link');
 
+		if (!is_admin()) {
+			add_action('wp_enqueue_scripts', 'webd_enqueue_dashicons');
+		}
+	}
 
-
-add_action('wp_ajax_nopriv_plugin_version', 'webd_plugin_version');
-add_action('wp_ajax_nopriv_plugin_information', 'webd_plugin_information');
-add_shortcode('packagelink', 'webd_package_link');
-
-if (!is_admin()) {
-
-    add_action('wp_enqueue_scripts', 'webd_enqueue_dashicons');
-
-}
-
-
-
-function webd_plugin_version() {
+public static function webd_plugin_version() {
 
     if (isset($_REQUEST['plugin']) && sanitize_title($_REQUEST['plugin'])) {
 
@@ -49,7 +44,7 @@ ORDER BY {$wpdb->prefix}webd_plugin_updates.ID DESC;",
 
         if ($latest_version) {
 
-            $response = new stdClass();
+            $response = new \stdClass();
             $response->slug = $plugin_slug;
             $response->new_version = $latest_version->plugin_version;
             $response->tested = $latest_version->tested;
@@ -80,7 +75,7 @@ ORDER BY {$wpdb->prefix}webd_plugin_updates.ID DESC;",
 
 }
 
-function webd_plugin_information() {
+public static function webd_plugin_information() {
 
     if (isset($_REQUEST['plugin']) && sanitize_title($_REQUEST['plugin'])) {
 
@@ -110,7 +105,7 @@ ORDER BY {$wpdb->prefix}webd_plugin_updates.ID DESC;",
 
         if ($version_history) {
 
-            $response = new stdClass();
+            $response = new \stdClass();
             $response->slug = $plugin_slug;
             $response->last_updated = date("Y-m-d g:ia", strtotime($version_history[0]->updated_date)) . ' GMT';
             $response->version = $version_history[0]->plugin_version;
@@ -153,7 +148,7 @@ ORDER BY {$wpdb->prefix}webd_plugin_updates.ID DESC;",
 
 }
 
-function webd_update_stats($plugin_slug) {
+public static function webd_update_stats($plugin_slug) {
 
     global $wpdb;
 
@@ -389,7 +384,7 @@ OR {$wpdb->prefix}webd_plugin_licences.licenced_http_host = %s);",
 
 }
 
-function webd_create_plugin_updates_database() {
+public static function webd_create_plugin_updates_database() {
 
     global $wpdb;
 
@@ -410,7 +405,7 @@ INDEX (plugin_slug, plugin_version)
 
 }
 
-function webd_create_plugin_stats_database() {
+public static function webd_create_plugin_stats_database() {
 
     global $wpdb;
 
@@ -431,7 +426,7 @@ INDEX (plugin_slug, http_host)
 
 }
 
-function webd_package_link($atts, $content = false) {
+public static function webd_package_link($atts, $content = false) {
 
     if (isset($atts['plugin']) && $atts['plugin']) {
 
@@ -501,7 +496,7 @@ request_date > DATE_SUB(NOW(), INTERVAL 7 DAY)) AS active_installs;",
 
 }
 
-function webd_is_local($client_host) {
+public static function webd_is_local($client_host) {
 
     if (
         (filter_var($client_host, FILTER_VALIDATE_IP) && (
@@ -522,10 +517,9 @@ function webd_is_local($client_host) {
 }
 
 
-function webd_enqueue_dashicons() {
+public static function webd_enqueue_dashicons() {
 
     wp_enqueue_style('dashicons');
 
 }
-
-?>
+}

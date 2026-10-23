@@ -1,39 +1,24 @@
 <?php
-/** WooCommerce sales and licensing integration. */
+/** Migrated feature methods; behavior is retained during the structural refactor. */
 
+namespace Webd\Repository\Commerce;
 
+defined( 'ABSPATH' ) || exit;
 
-if (!defined('ABSPATH')) {
-    exit('This isn\'t the page you\'re looking for. Move along, move along.');
-}
+final class WooCommerceIntegration {
+	public static function register_hooks() {
+		add_filter( 'action_scheduler_allow_async_request_runner', '__return_false' );
+		add_action('woocommerce_product_query', 'webd_woocommerce_product_query');
+		add_action('woocommerce_after_single_product', 'webd_get_url_action', 5);
+		add_action('woocommerce_order_status_completed', 'webd_activate_plugin');
+		add_filter('woocommerce_checkout_fields' , 'webd_override_checkout_fields');
+		add_action('woocommerce_order_status_processing', 'webd_auto_complete_order');
+		add_filter('woocommerce_add_to_cart_validation', 'webd_prevent_duplicate_orders', 10, 5);
+		add_action('wp', 'webd_wp');
+		add_filter('woocommerce_single_product_image_thumbnail_html', 'webd_woocommerce_single_product_image_thumbnail_html' );
+	}
 
-
-// Disable Action Scheduler Async Runner to stop slow PHP-FPM tasks
-add_filter( 'action_scheduler_allow_async_request_runner', '__return_false' );
-// Do not show support us product in shop catalogue
-add_action('woocommerce_product_query', 'webd_woocommerce_product_query');
-// Inject the JavaScript on the single product pages
-add_action('woocommerce_after_single_product', 'webd_get_url_action', 5);
-// Activate the plugin when order has completed
-add_action('woocommerce_order_status_completed', 'webd_activate_plugin');
-// Remove un-necessary customer fields
-add_filter('woocommerce_checkout_fields' , 'webd_override_checkout_fields');
-// Automatically complete orders (because we don't send anyone anything)
-add_action('woocommerce_order_status_processing', 'webd_auto_complete_order');
-// Prevent duplicate plugin license orders
-add_filter('woocommerce_add_to_cart_validation', 'webd_prevent_duplicate_orders', 10, 5);
-// Remove gallery zoom and lightbox
-add_action('wp', 'webd_wp');
-add_filter('woocommerce_single_product_image_thumbnail_html', 'webd_woocommerce_single_product_image_thumbnail_html' );
-
-
-
-// Checking which checkout endpoint is being used
-// Last time this was activated it was using V1 (saved in Domain Support Payments email folder)
-// add_action('rest_api_init', 'disable_wc_endpoint_v1');
-// add_action('rest_api_init', 'disable_wc_endpoint');
-
-function disable_wc_endpoint_v1() {
+public static function disable_wc_endpoint_v1() {
     $current_url = $_SERVER['REQUEST_URI'];
     if (strpos($current_url, '/wp-json/wc/store/v1/checkout') !== false) {
 //        wp_redirect(home_url('/404.php'));
@@ -43,7 +28,7 @@ error_log('/v1/checkout Endpoint Used: ' . print_r($_SERVER, true));
     }
 }
 
-function disable_wc_endpoint() {
+public static function disable_wc_endpoint() {
     $current_url = $_SERVER['REQUEST_URI'];
     if (strpos($current_url, '/wp-json/wc/store/checkout') !== false) {
 //        wp_redirect(home_url('/404.php'));
@@ -56,7 +41,7 @@ error_log('/store/checkout Endpoint Used: ' . print_r($_SERVER, true));
 
 
 
-function webd_wp() {
+public static function webd_wp() {
 
     remove_theme_support('wc-product-gallery-zoom');
     remove_theme_support('wc-product-gallery-lightbox');
@@ -64,18 +49,18 @@ function webd_wp() {
 
 }
 
-function webd_woocommerce_single_product_image_thumbnail_html($html) {
+public static function webd_woocommerce_single_product_image_thumbnail_html($html) {
     return strip_tags($html, '<div><img>');
 }
 
-function webd_after_setup_theme() {
+public static function webd_after_setup_theme() {
 
     remove_theme_support('wc-product-gallery-zoom');
     remove_theme_support('wc-product-gallery-lightbox');
 
 }
 
-function webd_woocommerce_product_query($q) {
+public static function webd_woocommerce_product_query($q) {
 	
 	if(!is_admin() && is_shop()) {
 
@@ -94,7 +79,7 @@ function webd_woocommerce_product_query($q) {
 
 }
 
-function webd_get_url_action() {
+public static function webd_get_url_action() {
 ?>
 <script type="text/javascript">
     jQuery(document).ready(function() {
@@ -156,7 +141,7 @@ function webd_get_url_action() {
 <?php
 }
 
-function webd_activate_plugin($order_id) {
+public static function webd_activate_plugin($order_id) {
 
     global $wpdb;
 
@@ -271,7 +256,7 @@ error_log('Order ' . $order_id . ' URL not found in _alg_wc_pif_local $values: '
 
 }
 
-function webd_override_checkout_fields($fields) {
+public static function webd_override_checkout_fields($fields) {
 
     // unset($fields['billing']['billing_first_name']);
     // unset($fields['billing']['billing_last_name']);
@@ -289,7 +274,7 @@ function webd_override_checkout_fields($fields) {
 
 }
 
-function webd_auto_complete_order($order_id) { 
+public static function webd_auto_complete_order($order_id) { 
 
 	if (!$order_id) {
 
@@ -307,7 +292,7 @@ function webd_auto_complete_order($order_id) {
 
 }
 
-function webd_prevent_duplicate_orders($passed, $product_id, $quantity, $variation_id = false, $variations = false) {
+public static function webd_prevent_duplicate_orders($passed, $product_id, $quantity, $variation_id = false, $variations = false) {
 
     $url = false;
 
@@ -417,7 +402,7 @@ AND {$wpdb->prefix}webd_plugin_licences.licenced_http_host = %s;
 
 }
 
-function webd_get_basket_approved_url($url) {
+public static function webd_get_basket_approved_url($url) {
 
     $url = trim($url);
 
@@ -452,7 +437,7 @@ function webd_get_basket_approved_url($url) {
 
 }
 
-function webd_get_licensed_url($url) {
+public static function webd_get_licensed_url($url) {
 
     $url = trim(strtolower($url));
 
@@ -496,5 +481,4 @@ function webd_get_licensed_url($url) {
     return $url;
 
 }
-
-?>
+}

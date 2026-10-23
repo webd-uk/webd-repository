@@ -18,28 +18,15 @@
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * Initialize the repository after WooCommerce has loaded.
- *
- * WordPress uses the Requires Plugins header to manage activation. This check
- * also keeps the plugin inactive if WooCommerce is unavailable at runtime.
- *
- * @return void
- */
-function webd_repository_init() {
-	if ( ! class_exists( 'WooCommerce', false ) ) {
-		return;
-	}
+define( 'WEBD_REPOSITORY_VERSION', '1.0.0' );
+define( 'WEBD_REPOSITORY_FILE', __FILE__ );
+define( 'WEBD_REPOSITORY_PATH', plugin_dir_path( __FILE__ ) );
 
-	// Keep the original hook registration order while loading each feature area.
-	require_once __DIR__ . '/includes/functions-site.php';
-	require_once __DIR__ . '/includes/functions-plugin-repository.php';
-	require_once __DIR__ . '/includes/functions-reviews.php';
-	require_once __DIR__ . '/includes/functions-woocommerce.php';
-}
+require_once WEBD_REPOSITORY_PATH . 'src/Autoloader.php';
+\Webd\Repository\Autoloader::register();
 
 if ( class_exists( 'WooCommerce', false ) ) {
-	webd_repository_init();
+	\Webd\Repository\Plugin::init();
 } else {
-	add_action( 'plugins_loaded', 'webd_repository_init' );
+	add_action( 'plugins_loaded', array( \Webd\Repository\Plugin::class, 'init' ) );
 }

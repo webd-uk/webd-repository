@@ -1,39 +1,26 @@
 <?php
-/** Site features for the webd.uk repository. */
+/** Migrated feature methods; behavior is retained during the structural refactor. */
 
+namespace Webd\Repository\Site;
 
+defined( 'ABSPATH' ) || exit;
 
-if (!defined('ABSPATH')) {
-    exit('This isn\'t the page you\'re looking for. Move along, move along.');
-}
+final class SiteFeatures {
+	public static function register_hooks() {
+		add_action('wp_footer', 'webd_wp_footer');
+		add_filter('post_thumbnail_id', 'webd_post_thumbnail_id', 10, 2);
+		add_filter('wp_head', 'webd_wp_head');
+		add_filter('robots_txt', 'webd_robots_txt');
+		add_filter('category_description', 'webd_category_description', 10, 2);
 
+		if (!is_admin()) {
+			add_filter('render_block', 'webd_render_block', 10, 3);
+		}
 
+		add_shortcode('webd-recent-contributions', 'webd_recent_contributions');
+	}
 
-// Animate site titles
-add_action('wp_footer', 'webd_wp_footer');
-// Filter featured images
-add_filter('post_thumbnail_id', 'webd_post_thumbnail_id', 10, 2);
-// Inject Open Graph and SEO tags
-add_filter('wp_head', 'webd_wp_head');
-// Block /scan/ in robots.txt
-add_filter('robots_txt', 'webd_robots_txt');
-// Filter category descriptions
-add_filter('category_description', 'webd_category_description', 10, 2);
-
-if (!is_admin()) {
-
-    // Replace Block Logic plugin ... !
-    add_filter('render_block', 'webd_render_block', 10, 3);
-
-}
-
-// Add shortcode to thank recent contributors
-add_shortcode('webd-recent-contributions', 'webd_recent_contributions');
-
-
-
-
-function webd_recent_contributions($atts, $content = '') {
+public static function webd_recent_contributions($atts, $content = '') {
 
     $product = wc_get_product(get_queried_object_id());
 
@@ -154,7 +141,7 @@ LIMIT 0,50;
 
 }
 
-function webd_wp_footer() {
+public static function webd_wp_footer() {
 
 ?>
 <style>
@@ -301,7 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 }
 
-function webd_has_own_thumbnail_id() {
+public static function webd_has_own_thumbnail_id() {
 
     global $wpdb, $post;
 
@@ -322,7 +309,7 @@ function webd_has_own_thumbnail_id() {
 
 }
 
-function webd_post_thumbnail_id($thumbnail_id, $post) {
+public static function webd_post_thumbnail_id($thumbnail_id, $post) {
 
     if (
         !$thumbnail_id &&
@@ -368,7 +355,7 @@ function webd_post_thumbnail_id($thumbnail_id, $post) {
 
 }
 
-function webd_wp_head() {
+public static function webd_wp_head() {
 
     $meta_title = '';
     $meta_description = '';
@@ -413,7 +400,7 @@ function webd_wp_head() {
 
 }
 
-function webd_robots_txt($output) {
+public static function webd_robots_txt($output) {
 
 	$path = (!empty( $site_url['path'])) ? $site_url['path'] : '';
 	$lines = preg_split('/\r\n|\r|\n/', $output);
@@ -441,7 +428,7 @@ function webd_robots_txt($output) {
 
 }
 
-function webd_render_block($block_content, $block, $instance) {
+public static function webd_render_block($block_content, $block, $instance) {
 
     $class_names = array();
 
@@ -511,7 +498,7 @@ function webd_render_block($block_content, $block, $instance) {
 
 }
 
-function webd_has_comments() {
+public static function webd_has_comments() {
 
     global $post;
 
@@ -530,7 +517,7 @@ function webd_has_comments() {
 
 }
 
-function webd_category_description($description, $category) {
+public static function webd_category_description($description, $category) {
 
     $category = get_term($category);
 
@@ -570,5 +557,4 @@ function webd_category_description($description, $category) {
 
     return $description;
 }
-
-?>
+}

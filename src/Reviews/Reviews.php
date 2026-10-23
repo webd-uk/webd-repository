@@ -1,15 +1,16 @@
 <?php
-/** Reviews for plugins listed on webd.uk. */
+/** Migrated feature methods; behavior is retained during the structural refactor. */
 
+namespace Webd\Repository\Reviews;
 
+defined( 'ABSPATH' ) || exit;
 
-if (!defined('ABSPATH')) {
-    exit('This isn\'t the page you\'re looking for. Move along, move along.');
-}
+final class Reviews {
+	public static function register_hooks() {
+		add_shortcode('show_reviews', 'webd_show_reviews_shortcode');
+	}
 
-
-
-function webd_show_reviews_shortcode($atts, $content) {
+public static function webd_show_reviews_shortcode($atts, $content) {
 
     global $post;
     $plugin = false;
@@ -52,7 +53,7 @@ function webd_show_reviews_shortcode($atts, $content) {
                 if ($i < 3 && strpos($review, '"5 out of 5 stars"') !== false) {
 
                     preg_match('/<span class="review-date">(.*)<\/span>/', $review, $review_date);
-                    $review_date[0] = DateTime::createFromFormat('F j, Y', $review_date[1]);
+                    $review_date[0] = \DateTime::createFromFormat('F j, Y', $review_date[1]);
                     $this_plugin_reviews .= '<article class="plugin-review">' . strip_tags(preg_replace(array('/<span class="review-date">(.*)<\/span>/', '/<span class="review-replies">(.*)<\/span>/', '/ avatar-60 photo/', '/ class="wporg-ratings"/'), array('<span class="review-date">' . $review_date[0]->format(get_option('date_format')) . '</span>', '', '', ''), $review), '<article><div><img><header><span><h3>') . '</article>';
                     $i++;
 
@@ -75,6 +76,4 @@ function webd_show_reviews_shortcode($atts, $content) {
 
 }
 
-add_shortcode('show_reviews', 'webd_show_reviews_shortcode');
-
-?>
+}
