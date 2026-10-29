@@ -17,7 +17,6 @@ final class PluginRepository {
 	}
 
 public static function webd_plugin_version() {
-	Profiler::begin_handler();
 
     if (isset($_REQUEST['plugin']) && sanitize_title($_REQUEST['plugin'])) {
 
@@ -27,18 +26,12 @@ public static function webd_plugin_version() {
 
         global $wpdb;
 
-        $sql_started_at = Profiler::begin_sql();
-        $updates_table = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->prefix . 'webd_plugin_updates'));
-        Profiler::end_sql('updates_table_check', $sql_started_at);
-        if ($updates_table != $wpdb->prefix . 'webd_plugin_updates') {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->prefix . 'webd_plugin_updates')) != $wpdb->prefix . 'webd_plugin_updates') {
 
-            $sql_started_at = Profiler::begin_sql();
             webd_create_plugin_updates_database();
-            Profiler::end_sql('updates_table_create', $sql_started_at);
 
         }
 
-        $sql_started_at = Profiler::begin_sql();
         $latest_version = $wpdb->get_row($wpdb->prepare(
             "SELECT {$wpdb->prefix}webd_plugin_updates.plugin_version,
 {$wpdb->prefix}webd_plugin_updates.tested,
@@ -48,7 +41,6 @@ WHERE {$wpdb->prefix}webd_plugin_updates.plugin_slug = %s
 ORDER BY {$wpdb->prefix}webd_plugin_updates.ID DESC;",
             $plugin_slug
         ));
-        Profiler::end_sql('latest_release', $sql_started_at);
 
         if ($latest_version) {
 
@@ -84,7 +76,6 @@ ORDER BY {$wpdb->prefix}webd_plugin_updates.ID DESC;",
 }
 
 public static function webd_plugin_information() {
-	Profiler::begin_handler();
 
     if (isset($_REQUEST['plugin']) && sanitize_title($_REQUEST['plugin'])) {
 
@@ -94,18 +85,12 @@ public static function webd_plugin_information() {
 
         global $wpdb;
 
-        $sql_started_at = Profiler::begin_sql();
-        $updates_table = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->prefix . 'webd_plugin_updates'));
-        Profiler::end_sql('updates_table_check', $sql_started_at);
-        if ($updates_table != $wpdb->prefix . 'webd_plugin_updates') {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->prefix . 'webd_plugin_updates')) != $wpdb->prefix . 'webd_plugin_updates') {
 
-            $sql_started_at = Profiler::begin_sql();
             webd_create_plugin_updates_database();
-            Profiler::end_sql('updates_table_create', $sql_started_at);
 
         }
 
-        $sql_started_at = Profiler::begin_sql();
         $version_history = $wpdb->get_results($wpdb->prepare(
             "SELECT {$wpdb->prefix}webd_plugin_updates.updated_date,
 {$wpdb->prefix}webd_plugin_updates.plugin_version,
@@ -117,7 +102,6 @@ WHERE {$wpdb->prefix}webd_plugin_updates.plugin_slug = %s
 ORDER BY {$wpdb->prefix}webd_plugin_updates.ID DESC;",
             $plugin_slug
         ));
-        Profiler::end_sql('release_history', $sql_started_at);
 
         if ($version_history) {
 
@@ -168,14 +152,9 @@ public static function webd_update_stats($plugin_slug) {
 
     global $wpdb;
 
-    $sql_started_at = Profiler::begin_sql();
-    $stats_table = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->prefix . 'webd_plugin_stats'));
-    Profiler::end_sql('stats_table_check', $sql_started_at);
-    if ($stats_table != $wpdb->prefix . 'webd_plugin_stats') {
+    if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->prefix . 'webd_plugin_stats')) != $wpdb->prefix . 'webd_plugin_stats') {
 
-        $sql_started_at = Profiler::begin_sql();
         webd_create_plugin_stats_database();
-        Profiler::end_sql('stats_table_create', $sql_started_at);
 
     }
 
@@ -287,7 +266,6 @@ public static function webd_update_stats($plugin_slug) {
 
     if ($request_values['http_host']) {
 
-        $sql_started_at = Profiler::begin_sql();
         $existing_stats = $wpdb->get_row($wpdb->prepare(
             "SELECT {$wpdb->prefix}webd_plugin_stats.ID, {$wpdb->prefix}webd_plugin_stats.plugin_version, {$wpdb->prefix}webd_plugin_stats.trial_date, {$wpdb->prefix}webd_plugin_stats.purchased
 FROM {$wpdb->prefix}webd_plugin_stats
@@ -299,7 +277,6 @@ ORDER BY {$wpdb->prefix}webd_plugin_stats.ID DESC;",
                 $request_values['http_host']
             )
         ));
-        Profiler::end_sql('stats_lookup', $sql_started_at);
 
         if ($existing_stats) {
 
@@ -332,7 +309,6 @@ ORDER BY {$wpdb->prefix}webd_plugin_stats.ID DESC;",
 
             }
 
-            $sql_started_at = Profiler::begin_sql();
             $wpdb->update(
                 "{$wpdb->prefix}webd_plugin_stats",
                 $update_values,
@@ -340,11 +316,9 @@ ORDER BY {$wpdb->prefix}webd_plugin_stats.ID DESC;",
                     'ID' => $existing_stats->ID
                 )
             );
-            Profiler::end_sql('stats_update', $sql_started_at);
 
         } else {
 
-            $sql_started_at = Profiler::begin_sql();
     		$wpdb->insert(
     			$wpdb->prefix . 'webd_plugin_stats',
     			$request_values, 
@@ -356,11 +330,9 @@ ORDER BY {$wpdb->prefix}webd_plugin_stats.ID DESC;",
     				'%s'
     			)
     		);
-            Profiler::end_sql('stats_insert', $sql_started_at);
 
         }
 
-        $sql_started_at = Profiler::begin_sql();
         $plugin_licence = $wpdb->get_row($wpdb->prepare(
             "SELECT {$wpdb->prefix}webd_plugin_licences.ID
 FROM {$wpdb->prefix}webd_plugin_licences
@@ -373,7 +345,6 @@ OR {$wpdb->prefix}webd_plugin_licences.licenced_http_host = %s);",
                 '*' . strstr($request_values['http_host'], '.')
             )
         ));
-        Profiler::end_sql('licence_lookup', $sql_started_at);
 
         if ($plugin_licence) {
 

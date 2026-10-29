@@ -21,19 +21,9 @@ defined( 'ABSPATH' ) || exit;
 define( 'WEBD_REPOSITORY_VERSION', '1.0.0' );
 define( 'WEBD_REPOSITORY_FILE', __FILE__ );
 define( 'WEBD_REPOSITORY_PATH', plugin_dir_path( __FILE__ ) );
-// Temporary live profiling; wp-config.php can set this to false without a deploy.
-if ( ! defined( 'WEBD_REPOSITORY_PROFILE_PREMIUM_API' ) ) {
-	define( 'WEBD_REPOSITORY_PROFILE_PREMIUM_API', true );
-}
 
 require_once WEBD_REPOSITORY_PATH . 'src/Autoloader.php';
 \Webd\Repository\Autoloader::register();
-\Webd\Repository\API\Profiler::maybe_start();
-// Temporary cron diagnostic; define the constant as false in wp-config.php to stop it.
-if ( ! defined( 'WEBD_REPOSITORY_CRON_DIAGNOSTIC' ) ) {
-	define( 'WEBD_REPOSITORY_CRON_DIAGNOSTIC', true );
-}
-\Webd\Repository\Diagnostics\CronDiagnostic::maybe_start();
 
 if ( class_exists( 'WooCommerce', false ) ) {
 	\Webd\Repository\Plugin::init();
