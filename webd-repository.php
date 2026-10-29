@@ -29,6 +29,11 @@ if ( ! defined( 'WEBD_REPOSITORY_PROFILE_PREMIUM_API' ) ) {
 require_once WEBD_REPOSITORY_PATH . 'src/Autoloader.php';
 \Webd\Repository\Autoloader::register();
 \Webd\Repository\API\Profiler::maybe_start();
+// Temporary cron diagnostic; define the constant as false in wp-config.php to stop it.
+if ( ! defined( 'WEBD_REPOSITORY_CRON_DIAGNOSTIC' ) ) {
+	define( 'WEBD_REPOSITORY_CRON_DIAGNOSTIC', true );
+}
+\Webd\Repository\Diagnostics\CronDiagnostic::maybe_start();
 
 if ( class_exists( 'WooCommerce', false ) ) {
 	\Webd\Repository\Plugin::init();
