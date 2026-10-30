@@ -106,6 +106,7 @@ final class Reviews {
 
 	private static function render_reviews( $reviews ) {
 		$markup = '<!-- wp:group {"className":"webd-reviews"} --><div class="wp-block-group webd-reviews">';
+		$markup .= '<!-- wp:paragraph {"className":"webd-reviews__intro"} --><p class="webd-reviews__intro">A few reviews from wordpress.org ...</p><!-- /wp:paragraph -->';
 		foreach ( $reviews as $review ) {
 			if ( ! is_array( $review ) || empty( $review['url'] ) || empty( $review['title'] ) ) {
 				continue;
@@ -114,16 +115,15 @@ final class Reviews {
 			$url = esc_url( $review['url'] );
 			$markup .= '<!-- wp:group {"className":"webd-review"} --><div class="wp-block-group webd-review">';
 			$markup .= '<!-- wp:heading {"level":3,"className":"webd-review__title"} --><h3 class="wp-block-heading webd-review__title"><a href="' . $url . '">' . $title . '</a></h3><!-- /wp:heading -->';
-			if ( ! empty( $review['author'] ) || ! empty( $review['date'] ) ) {
-				$byline = esc_html( isset( $review['author'] ) ? $review['author'] : '' );
-				if ( ! empty( $review['date'] ) ) {
-					$byline .= ( $byline ? ' · ' : '' ) . esc_html( wp_date( get_option( 'date_format' ), (int) $review['date'] ) );
-				}
-				$markup .= '<!-- wp:paragraph {"className":"webd-review__byline"} --><p class="webd-review__byline">' . $byline . '</p><!-- /wp:paragraph -->';
+			$markup .= '<!-- wp:quote {"className":"webd-review__quote"} --><blockquote class="wp-block-quote webd-review__quote">';
+			$markup .= '<p>' . esc_html( isset( $review['text'] ) ? $review['text'] : '' ) . '</p>';
+			$byline = esc_html( isset( $review['author'] ) ? $review['author'] : '' );
+			$byline .= ( $byline ? ' · ' : '' ) . '<span class="webd-review__stars" role="img" aria-label="5 out of 5 stars" style="color:#d4a000">★★★★★</span>';
+			if ( ! empty( $review['date'] ) ) {
+				$byline .= ' · ' . esc_html( wp_date( get_option( 'date_format' ), (int) $review['date'] ) );
 			}
-			if ( ! empty( $review['text'] ) ) {
-				$markup .= '<!-- wp:paragraph {"className":"webd-review__text"} --><p class="webd-review__text">' . esc_html( $review['text'] ) . '</p><!-- /wp:paragraph -->';
-			}
+			$markup .= '<cite class="webd-review__citation">' . $byline . '</cite>';
+			$markup .= '</blockquote><!-- /wp:quote -->';
 			$markup .= '</div><!-- /wp:group -->';
 		}
 		$markup .= '</div><!-- /wp:group -->';
