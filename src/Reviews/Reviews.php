@@ -1,5 +1,5 @@
 <?php
-/** Migrated feature methods; behavior is retained during the structural refactor. */
+/** WordPress.org reviews shown by the existing shortcode. */
 
 namespace Webd\Repository\Reviews;
 
@@ -7,73 +7,83 @@ defined( 'ABSPATH' ) || exit;
 
 final class Reviews {
 	public static function register_hooks() {
-		add_shortcode('show_reviews', 'webd_show_reviews_shortcode');
+		add_shortcode( 'show_reviews', 'webd_show_reviews_shortcode' );
 	}
 
-public static function webd_show_reviews_shortcode($atts, $content) {
+	public static function webd_show_reviews_shortcode( $atts, $content ) {
+		global $post;
 
-    global $post;
-    $plugin = false;
-    $content = '';
+		$plugin = false;
+		if ( isset( $atts['product'] ) ) {
+			$plugin = preg_replace( '/(?:\-upgrade|\-donation)$/', '', $atts['product'] );
+		} elseif ( is_object( $post ) && ! empty( $post->post_name ) ) {
+			$plugin = preg_replace( '/(?:\-upgrade|\-donation)$/', '', $post->post_name );
+		}
 
-    if (isset($atts['product'])) {
+		$plugin = sanitize_title( $plugin );
+		if ( ! $plugin ) {
+			return;
+		}
 
-        $plugin = preg_replace('/(?:\-upgrade|\-donation)$/', '', $atts['product']);
+		$all_reviews = get_option( 'webd_product_reviews' );
+		$all_reviews = is_array( $all_reviews ) ? $all_reviews : array();
+		$cached = isset( $all_reviews[ $plugin ] ) && is_array( $all_reviews[ $plugin ] )
+			? $all_reviews[ $plugin ] : array();
+		$reviews = isset( $cached['reviews'] ) && is_string( $cached['reviews'] ) ? $cached['reviews'] : '';
 
-    } elseif (is_object($post) && isset($post->post_name) && $post->post_name) {
+		// An empty review list is still a valid result until its cache period ends.
+		$fresh = isset( $cached['time'], $cached['reviews'] )
+			&& is_numeric( $cached['time'] )
+			&& time() < ( (int) $cached['time'] + DAY_IN_SECONDS );
+		if ( ! $fresh ) {
+			$refreshed = self::fetch_reviews( $plugin );
+			if ( false !== $refreshed ) {
+				$reviews = $refreshed;
+				$all_reviews[ $plugin ] = array( 'time' => time(), 'reviews' => $reviews );
+				update_option( 'webd_product_reviews', $all_reviews, false );
+			}
+		}
 
-        $plugin = preg_replace('/(?:\-upgrade|\-donation)$/', '', $post->post_name);
+		return '<p>A few reviews from wordpress.org ...</p>' . $reviews;
+	}
 
-    }
+	private static function fetch_reviews( $plugin ) {
+		if ( ! function_exists( 'fetch_feed' ) ) {
+			include_once ABSPATH . WPINC . '/feed.php';
+		}
+		$feed = fetch_feed( 'https://wordpress.org/support/plugin/' . rawurlencode( $plugin ) . '/reviews/feed/' );
+		if ( is_wp_error( $feed ) ) {
+			return false;
+		}
 
-    if ($plugin) {
+		$reviews = '';
+		$count = 0;
+		foreach ( $feed->get_items( 0, 20 ) as $item ) {
+			$title = $item->get_title();
+			if ( ! preg_match( '/\(5 stars\)\s*$/i', $title ) ) {
+				continue;
+			}
 
-        $all_reviews = get_option('webd_product_reviews');
+			$title = preg_replace( '/\s*\(5 stars\)\s*$/i', '', $title );
+			$description = $item->get_description();
+			$description = preg_replace( '/^\s*<p>\s*Replies:.*?<\/p>\s*<p>\s*Rating:.*?<\/p>/si', '', $description );
+			$description = preg_replace( '/<ul[^>]*class="[^"]*bbp-topic-revision-log[^"]*"[^>]*>.*?<\/ul>/si', '', $description );
+			$author = $item->get_author();
+			$date = $item->get_date( 'U' );
+			$reviews .= '<article class="plugin-review"><header><h3>' . esc_html( $title ) . '</h3>';
+			if ( $author ) {
+				$reviews .= '<span>' . esc_html( $author->get_name() ) . '</span>';
+			}
+			if ( $date ) {
+				$reviews .= '<span class="review-date">' . esc_html( wp_date( get_option( 'date_format' ), (int) $date ) ) . '</span>';
+			}
+			$reviews .= '</header><div>' . wp_kses_post( $description ) . '</div></article>';
+			$count++;
+			if ( 3 === $count ) {
+				break;
+			}
+		}
 
-        $this_plugin_reviews = '';
-
-        if (is_array($all_reviews) && isset($all_reviews[$plugin])) {
-
-            if (time() < (strtotime('+1 day', $all_reviews[$plugin]['time']))) {
-
-                $this_plugin_reviews = $all_reviews[$plugin]['reviews'];
-
-            }
-
-        }
-
-        if (empty($this_plugin_reviews)) {
-
-            $page = file_get_contents("https://wordpress.org/plugins/$plugin/");
-            preg_match_all('/<article class="plugin-review">(.*?)<\/article>/si', $page, $reviews);
-            $i = 0;
-
-            foreach($reviews[1] as $review) {
-
-                if ($i < 3 && strpos($review, '"5 out of 5 stars"') !== false) {
-
-                    preg_match('/<span class="review-date">(.*)<\/span>/', $review, $review_date);
-                    $review_date[0] = \DateTime::createFromFormat('F j, Y', $review_date[1]);
-                    $this_plugin_reviews .= '<article class="plugin-review">' . strip_tags(preg_replace(array('/<span class="review-date">(.*)<\/span>/', '/<span class="review-replies">(.*)<\/span>/', '/ avatar-60 photo/', '/ class="wporg-ratings"/'), array('<span class="review-date">' . $review_date[0]->format(get_option('date_format')) . '</span>', '', '', ''), $review), '<article><div><img><header><span><h3>') . '</article>';
-                    $i++;
-
-                }
-
-            }
-
-            $all_reviews[$plugin] = array(
-                'time' => time(),
-                'reviews' => $this_plugin_reviews
-            );
-
-            update_option('webd_product_reviews', $all_reviews, false);
-
-        }
-
-        return '<p>A few reviews from wordpress.org ...</p>' . $this_plugin_reviews;
-
-    }
-
-}
-
+		return $reviews;
+	}
 }
