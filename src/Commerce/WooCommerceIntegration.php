@@ -7,6 +7,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class WooCommerceIntegration {
 	public static function register_hooks() {
+		add_filter( 'script_loader_src', array( __CLASS__, 'use_pif_click_fix' ), 10, 2 );
 		add_filter( 'action_scheduler_allow_async_request_runner', '__return_false' );
 		add_action('woocommerce_product_query', 'webd_woocommerce_product_query');
 		add_action('woocommerce_after_single_product', 'webd_get_url_action', 5);
@@ -16,6 +17,15 @@ final class WooCommerceIntegration {
 		add_filter('woocommerce_add_to_cart_validation', 'webd_prevent_duplicate_orders', 10, 5);
 		add_action('wp', 'webd_wp');
 		add_filter('woocommerce_single_product_image_thumbnail_html', 'webd_woocommerce_single_product_image_thumbnail_html' );
+	}
+
+	/** Replace PIF's affected frontend script until the upstream click bug is fixed. */
+	public static function use_pif_click_fix( $src, $handle ) {
+		if ( 'alg-wc-pif-blocks' !== $handle || ! is_product() ) {
+			return $src;
+		}
+
+		return plugins_url( 'assets/js/pif-blocks-compat.js', WEBD_REPOSITORY_FILE ) . '?ver=' . WEBD_REPOSITORY_VERSION;
 	}
 
 public static function disable_wc_endpoint_v1() {
